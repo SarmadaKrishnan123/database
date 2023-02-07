@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="100fbf8f-f997-467d-a8fc-c3f7d226275b" >
+		<http:listener-connection host="0.0.0.0" port="8083" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="1cfb08ac-3052-4db2-b263-8a0f3dd75bc9" >
+		<db:oracle-connection host="localhost" user="system" password="mysql" instance="xe" />
+	</db:config>
+	<flow name="database1Flow" doc:id="961e0b83-db41-4b62-bd40-ba400865b26d" >
+		<http:listener doc:name="Listener" doc:id="3ed1c3f1-ed97-45ce-9f94-e24dcea75fa6" config-ref="HTTP_Listener_config" path="/path1"/>
+		<logger level="INFO" doc:name="Logger" doc:id="ce96973d-f9b0-4311-ad0a-6923318542eb" message='#["start"]'/>
+		<db:insert doc:name="Insert" doc:id="091176e1-6bbb-45ed-be47-9237edc8ceb8" config-ref="Database_Config">
+			<db:sql><![CDATA[INSERT INTO SCHOOL (STUD_NAME, STUD_ID) VALUES (:name,:id)]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	"name": payload.NAME,
+	"id": payload.ID
+	
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Logger" doc:id="b1a66877-943e-4213-8dca-3d4ec8570bba" message="#[payload]"/>
+		<db:select doc:name="Select" doc:id="84281efb-1df8-4cee-bb31-eae73036aaa9" config-ref="Database_Config">
+			<db:sql><![CDATA[
+SELECT * FROM SCHOOL
+]]></db:sql>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="566761bf-0277-436d-8397-7146695e50af" message='#["end flow"]'/>
+		<ee:transform doc:name="Transform Message" doc:id="4f46b20d-d1fd-4169-96c0-ca96174a13c0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+   {
+        "STUD_ID": payload.STUD_ID,
+        "STUD_NAME": payload.STUD_NAME
+    }]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
